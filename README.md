@@ -4,7 +4,7 @@
 
 Našou témou bude veľmi častá úloha v oblasti NLP (Natural language processing) konkrétnejšie zameraná na analýzu sentimentu. Na začiatok by sme chceli začať s binárnou klasifikáciou používateľských recenzií k jednotlivým filmom z IMDb. Keďže klasifikácia používateľskýchií je pomerne jednoduchá úloha, poskytuje nám široké možnosti experimentovania a priestor na pridávanie viacerých rozšírení k tejto téme. 
 
-Téma sa nám javi ako zaujímava z dôvodu nášho vysokého záujmu o folmovú tvorbu. Keďže táto oblasť je zároveň našim koníčkom, tak práca na tejto téme je pre nás o to zábavnejšia.
+Téma sa nám javí ako zaujímavá z dôvodu nášho vysokého záujmu o filmovú tvorbu. Keďže táto oblasť je zároveň našim koníčkom, tak práca na tejto téme je pre nás o to zábavnejšia.
 
 ## Analýza sentimentu
 
