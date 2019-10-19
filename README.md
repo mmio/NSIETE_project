@@ -1,10 +1,10 @@
-# NSIETE Project Proposal
+# NSIETE Návrh projektu
 
-## Motivation
+## Motivácia
 
-We picked a common supervised NLP task namely sentiment analysis. For starters we consider only binary classification of movie review. This is a very common task for NLP, which allows for experimentation with different models.
+Vybrali sme si veľmi častú úlohu NLP konkrétne analýzu sentimentu. Na začiatok by sme chcely iba binárnu klasifikáciu recenzií filmov. Tým pádom, že to je pomerne jednoduchá úloha je veľa možností na experimentovanie a popridávanie viacerých rozšírení k tejto úlohe.
 
-## Related Work
+## Súvisiaca práca
 
 Yuan, Ye, and You Zhou. "Twitter sentiment analysis with recursive neural networks." CS224D Course Projects (2015).
 
@@ -12,15 +12,15 @@ Zhang, Lei, Shuai Wang, and Bing Liu. "Deep learning for sentiment analysis: A s
 
 ## Datasets
 
-We intend to use the following dataset from https://nlp.stanford.edu/sentiment/code.html which contain 25,000 labeled and 25,000 unlabeled higly polarized movie reviews.
+Rozhodli sme sa použiť nasledujúci dataset https://nlp.stanford.edu/sentiment/code.html ktorá obsahuje 25,000 označkovaných vysoko polarizovaných recenzíí a 25,000 neoznačnených recenzíí.
 
-## High-Level Solution Proposal
+## Vysoko úrovňové riešenie
 
-We will try multiple recurrent network architectures LSTM, GRU and simple RNN to predict the sentiment of reviews. In addition we will also use simple word or character level embeddings.
+Vyskúšame viacero rekurentných sietí ako LSTM, GRU a jednoduché RNN na predikciu sentimentov. Navyše použijeme embedingy slova alebo znakov.
 
-### Possible extensions
-- Language models
-- Transfer learning (pre trained language models, word embeddings)
-- Attention mechanism
+### Možné rozšírenia
+- Jazykové modely
+- Transfer learning (pretrénované jazykové modely, word embeddings)
+- Mechanizmus pozornosti
 - Adversary networks
-- Use of Convolutional networks
+- Konvolučné siete
