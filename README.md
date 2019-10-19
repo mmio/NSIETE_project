@@ -1,5 +1,7 @@
 # NSIETE Návrh projektu
 
+Dominik Vasko, Adrian Vyskoč
+
 ## Motivácia
 
 Našou témou bude veľmi častá úloha v oblasti NLP (Natural language processing) konkrétnejšie zameraná na analýzu sentimentu. Na začiatok by sme chceli začať s binárnou klasifikáciou používateľských recenzií k jednotlivým filmom z IMDb. Keďže klasifikácia používateľskýchií je pomerne jednoduchá úloha, poskytuje nám široké možnosti experimentovania a priestor na pridávanie viacerých rozšírení k tejto téme. 
