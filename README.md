@@ -13,7 +13,7 @@ Analyzovať tisíce recenzií manuálne je časovo aj finančne náročné. Na p
 ## Súvisiaca práca
 
 Veľmi jednoduchým riešením zadanie je použítie rekurentných sietí, ktoré sú na túto úlohu ako stvorené.
-- Yuan, Ye, and You Zhou. "Twitter sentiment analysis with recursive neural networks." CS224D Course Projects (2015).
+- Graves, Alex. "Supervised sequence labelling with recurrent neural networks. 2012." URL https://www.cs.toronto.edu/~graves/preprint.pdf (2012).
 
 Existuje však mnoho rozšírení, ktoré je možné aplikovať aj v našej práci napr. mechanizmy pozornosti alebo konvolučné siete.
 - Olah, Chris, and Shan Carter. "Attention and augmented recurrent neural networks." Distill 1.9 (2016): e1.
