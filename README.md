@@ -16,6 +16,8 @@ Veľmi jednoduchým riešením zadanie je použítie rekurentných sietí, ktor�
 - Yuan, Ye, and You Zhou. "Twitter sentiment analysis with recursive neural networks." CS224D Course Projects (2015).
 
 Existuje však mnoho rozšírení, ktoré je možné aplikovať aj v našej práci napr. mechanizmy pozornosti alebo konvolučné siete.
+- Olah, Chris, and Shan Carter. "Attention and augmented recurrent neural networks." Distill 1.9 (2016): e1.
+- Zhang, Xiang, Junbo Zhao, and Yann LeCun. "Character-level convolutional networks for text classification." Advances in neural information processing systems. 2015.
 - Zhang, Lei, Shuai Wang, and Bing Liu. "Deep learning for sentiment analysis: A survey." Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery 8.4 (2018): e1253.
 - Tang, Duyu, Bing Qin, and Ting Liu. "Deep learning for sentiment analysis: successful approaches and future challenges." Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery 5.6 (2015): 292-303.
 
@@ -25,7 +27,7 @@ Rozhodli sme sa použiť dataset recenzíí filmov z websídla IMDb dostupný na
 
 ## Vysoko úrovňové riešenie
 
-Vyskúšame viacero architektúr rekurentných sietí ako LSTM, GRU a jednoduché RNN na predikciu sentimentov s rôznymi kombináciami optimalizačných algoritmov SGD, ADAM, etc. Navyše použijeme embedingy slov.
+Vyskúšame viacero architektúr rekurentných sietí ako LSTM, GRU a jednoduché RNN na predikciu sentimentov. Navyše použijeme embedingy slov.
 
 ### Možné rozšírenia
 - Jazykové modely
