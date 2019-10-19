@@ -6,7 +6,7 @@ Našou témou bude veľmi častá úloha v oblasti NLP (Natural language process
 
 Téma sa nám javí ako zaujímavá z dôvodu nášho vysokého záujmu o filmovú tvorbu. Keďže táto oblasť je zároveň našim koníčkom, tak práca na tejto téme je pre nás o to zábavnejšia.
 
-## Analýza sentimentu
+## Analýza sentimentu
 
 Analýza sentimentu (známa aj ako prieskum názorov) je oblasťou aktívneho výskumu v oblasti spracovania prirodzeného jazyka. Zameriava sa na identifikáciu, získavanie a organizovanie sentimentov z textov generovaných používateľmi v sociálnych sieťach, blogoch alebo recenziách produktov. Mnoho štúdií v literatúre využíva prístupy strojového učenia na riešenie úloh analýzy sentimentu z rôznych perspektív za posledných 15 rokov. 
 
