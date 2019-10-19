@@ -15,7 +15,7 @@ Analyzovať tisíce recenzií manuálne je časovo aj finančne náročné. Na p
 Veľmi jednoduchým riešením zadanie je použítie rekurentných sietí, ktoré sú na túto úlohu najvhodnejšie.
 - Yuan, Ye, and You Zhou. "Twitter sentiment analysis with recursive neural networks." CS224D Course Projects (2015).
 
-Existuje však mnoho možných rozšírení, ktoré je možné aplikovať aj na našu prácu napr. mechanizmy pozornosti alebo konvolučné siete.
+Existuje však mnoho rozšírení, ktoré je možné aplikovať aj v našej práci napr. mechanizmy pozornosti alebo konvolučné siete.
 - Zhang, Lei, Shuai Wang, and Bing Liu. "Deep learning for sentiment analysis: A survey." Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery 8.4 (2018): e1253.
 - Tang, Duyu, Bing Qin, and Ting Liu. "Deep learning for sentiment analysis: successful approaches and future challenges." Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery 5.6 (2015): 292-303.
 
