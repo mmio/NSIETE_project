@@ -23,7 +23,7 @@ Existuje však mnoho rozšírení, ktoré je možné aplikovať aj v našej prá
 
 ## Datasety
 
-Rozhodli sme sa použiť dataset recenzíí filmov z websídla IMDb dostupný na: https://nlp.stanford.edu/sentiment/code.html . Tento dataset obsahuje 25 000 označkovaných vysoko polarizovaných recenzíí a 25 000 neoznačnených recenzíí. Keďže dát je pomerne veľa, nemal by vzniknúť problém pri trénovaní modelu.
+Rozhodli sme sa použiť dataset recenzíí filmov z websídla IMDb dostupný na: http://ai.stanford.edu/~amaas/data/sentiment/ . Tento dataset obsahuje 25 000 označkovaných vysoko polarizovaných recenzíí a 25 000 neoznačnených recenzíí. Keďže dát je pomerne veľa, nemal by vzniknúť problém pri trénovaní modelu.
 
 ## Vysoko úrovňové riešenie
 
