@@ -41,5 +41,5 @@ process_path = lambda file_path: tf.io.read_file(file_path)
 ds = list_ds_pos.map(process_path)
 
 # Batch data
-for batch in ds.padded_batch(4, padded_shapes=(None,)).take(2):
+for batch in ds.batch(4).take(2):
   print([arr.numpy() for arr in batch])
