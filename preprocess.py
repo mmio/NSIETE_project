@@ -36,10 +36,21 @@ TEST_NEGATIVE_FOLDER = f'{TEST_FOLDER}/neg'
 list_ds_pos = tf.data.Dataset.list_files(f'{TEST_POSITIVE_FOLDER}/*')
 list_ds_neg = tf.data.Dataset.list_files(f'{TEST_NEGATIVE_FOLDER}/*')
 
+# Redundant???
 process_path = lambda file_path: tf.io.read_file(file_path)
 
 ds = list_ds_pos.map(process_path)
 
 # Batch data
-for batch in ds.batch(4).take(2):
-  print([arr.numpy() for arr in batch])
+t = None
+for batch in ds.batch(4).take(1):
+  t = [f'{str.numpy().decode("utf-8")}' for str in batch]
+
+# Batch padding
+vocabulary = open(f'{DATASET_DIR}/aclImdb/imdb.vocab').read().split('\n')
+tokenizer = tf.keras.preprocessing.text.Tokenizer()
+tokenizer.fit_on_texts(vocabulary)
+
+sequences = tokenizer.texts_to_sequences(t)
+padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(sequences, padding='post')
+print(padded_sequences)
