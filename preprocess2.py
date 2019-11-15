@@ -5,12 +5,8 @@ import glob
 import shutil
 import random
 import tarfile
-import pandas as pd
 import urllib.request
 import tensorflow as tf
-import tensorflow.keras as keras
-import tqdm
-
 
 # Download dataset
 DATASET_URL = 'http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz'
@@ -43,19 +39,20 @@ TRAIN_POSITIVE_FOLDER = f'{TRAIN_FOLDER}/pos'
 TRAIN_NEGATIVE_FOLDER = f'{TRAIN_FOLDER}/neg'
 TRAIN_UNSUPERVISED_FOLDER = f'{TRAIN_FOLDER}/unsup'
 
-VOCAB_SIZE = 10_000
-MAX_SENTENCE_LEN = 100
+VOCAB_SIZE = 1_000
+MAX_SENTENCE_LEN = 30
+BATCH_SIZE = 32
 
-# Create tokenizer
 def get_tokenizer(vocab_file, vocab_size, separator='\n'):
-    # FIXME: filter out duplicates, don't use set -> nondeterministic sorting, this example is OK imdb.vocab has unique values
-    vocab = open(vocab_file).read().split(separator) 
-    tokenizer = tf.keras.preprocessing.text.Tokenizer(vocab_size, oov_token=0)
+    vocab = open(vocab_file).read().split(separator)
+    ## Is this right
+    tokenizer = tf.keras.preprocessing.text.Tokenizer(vocab_size, oov_token=vocab_size)
     tokenizer.fit_on_texts(vocab)
     return tokenizer
-tokenizer = get_tokenizer(f'{DATASET_DIR}/aclImdb/imdb.vocab', VOCAB_SIZE)
 
-# Dataset of positive reviews
+tokenizer = get_tokenizer(f'{DATASET_DIR}/aclImdb/imdb.vocab', VOCAB_SIZE+1)
+
+# Dataset
 def create_shifted_dataset_from_files(folders, shuffle=True):
     files = map(lambda folder: glob.glob(f'{folder}/*'), folders)
 
@@ -75,7 +72,8 @@ def create_shifted_dataset_from_files(folders, shuffle=True):
 
     labeled_tokens = map(lambda example: [*tokenizer.texts_to_sequences([example[0]]),
                                           *tokenizer.texts_to_sequences([example[1]])],
-                         flat_labeled_files);
+                         flat_labeled_files)
+    return list(labeled_tokens)
 
 # create_shifted_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
 
@@ -104,10 +102,10 @@ def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [
     # tokenize texts
     labeled_tokens = map(lambda example: [*tokenizer.texts_to_sequences([example[0]]),
                                           label_map[example[1]]], labeled_texts)
-    return labeled_tokens
+    return list(labeled_tokens), len(flat_labeled_files)
 
-cls_test_ds = create_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
-cls_train_ds = create_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+cls_test_ds, num_test_samples = create_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+cls_train_ds, num_train_samples = create_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 
 def cls_test_gen():
     for el in cls_test_ds:
@@ -117,67 +115,25 @@ def cls_train_gen():
     for el in cls_train_ds:
         yield (el[0], el[1])
 
-ds_test = tf.data.Dataset.from_generator(cls_test_gen, (tf.int64, tf.int64))
-ds_train = tf.data.Dataset.from_generator(cls_train_gen, (tf.int64, tf.int64))
+ds_test = tf.data.Dataset.from_generator(lambda: cls_test_gen(),
+                                        (tf.int64, tf.int64)).repeat()
+ds_train = tf.data.Dataset.from_generator(lambda: cls_train_gen(),
+                                        (tf.int64, tf.int64)).repeat()
 
-##########################################################################################################################
-
-ds_files_pos = glob.glob(f'{TRAIN_POSITIVE_FOLDER}/*.txt')
-ds_texts_pos = map(lambda fn: open(fn).read().split(' ')[:MAX_SENTENCE_LEN], ds_files_pos)
-ds_sequences_pos = tokenizer.texts_to_sequences(ds_texts_pos)
-
-def generator():
-    for el in ds_sequences_pos:
-        yield (el, [1, 0])
-
-ds = tf.data.Dataset.from_generator(generator, (tf.int64, tf.int64))
-
-# Dataset of negative reviews
-ds_files_neg = glob.glob(f'{TRAIN_NEGATIVE_FOLDER}/*.txt')
-ds_texts_neg = map(lambda fn: open(fn).read().split(' ')[:MAX_SENTENCE_LEN], ds_files_neg)
-ds_sequences_neg = tokenizer.texts_to_sequences(ds_texts_neg)
-
-def gen_negative():
-    for el in ds_sequences_neg:
-        yield (el, [0, 1])
-
-ds_neg = tf.data.Dataset.from_generator(gen_negative, (tf.int64, tf.int64))
-
-# Creating the whole dataset
-def gen_all():
-    g1 = gen_negative()
-    g2 = generator()
-    while True:
-        val1 = next(g1, None)
-        val2 = next(g2, None)
-
-        if val1:
-            yield val1
-
-        if val2:
-            yield val2
-
-        if val2 == None and val1 == None:
-            break
-
-ds_whole = tf.data.Dataset.from_generator(gen_all, (tf.int64, tf.int64))
-##########################################################################################################################
-
-# ds = ds_whole
-ds = ds_test
-ds = ds.shuffle(buffer_size=10_000)
-# Bucketing, how the fuck do I sort padded batches ?
-ds = ds.apply(tf.data.experimental.bucket_by_sequence_length(
-    lambda el, _: tf.size(el),
-    [50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900],
-    [32] * 15,
+ds_train = ds_train.padded_batch(
+    BATCH_SIZE,
     padded_shapes=([None], [2]),
-    drop_remainder=True
-))
+    drop_remainder=True)
+
+ds_test = ds_test.padded_batch(
+    BATCH_SIZE,
+    padded_shapes=([None], [2]),
+    drop_remainder=True)
 
 model = tf.keras.Sequential([
     tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=128, mask_zero=True),
-    tf.keras.layers.LSTM(48, activation='sigmoid'),
+    tf.keras.layers.Bidirectional(
+        tf.keras.layers.LSTM(48, activation='sigmoid')),
     tf.keras.layers.Dense(2, activation='softmax')
 ])
 
@@ -185,10 +141,14 @@ model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
               loss='binary_crossentropy',
               metrics=['accuracy'])
 
-model.fit(ds, epochs=1)
+model.fit(ds_train,
+        epochs=5,
+        shuffle=True,
+        validation_data=ds_test,
+        steps_per_epoch=num_train_samples // BATCH_SIZE,
+        validation_steps=num_test_samples // BATCH_SIZE)
 
 while True:
 	print('Enter something:')
 	inp = input()
 	print(model.predict(tokenizer.texts_to_sequences([inp.split(' ')])))
-
