@@ -1,5 +1,3 @@
-# pip3 install pandas
-
 import os
 import glob
 import shutil
