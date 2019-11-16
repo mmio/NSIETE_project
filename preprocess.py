@@ -32,7 +32,7 @@ else:
 
 # Arguments
 VOCAB_SIZE = 1_000
-MAX_SENTENCE_LEN = 30
+MAX_SENTENCE_LEN = 100
 BATCH_SIZE = 32
 
 # Load data from folders
@@ -132,10 +132,15 @@ ds_test = ds_test.padded_batch(
     padded_shapes=([None], [2]),
     drop_remainder=True)
 
+import layers
+
 model = tf.keras.Sequential([
     tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=128, mask_zero=True),
-    tf.keras.layers.Bidirectional(
-        tf.keras.layers.LSTM(48, activation='sigmoid')),
+    tf.keras.layers.LSTM(48, activation='sigmoid', return_sequences=True),
+    layers.SelfAttention(size=50,
+                    num_hops=6,
+                    use_penalization=False,
+                    model_api='sequential'),
     tf.keras.layers.Dense(2, activation='softmax')
 ])
 
@@ -144,7 +149,7 @@ model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
               metrics=['accuracy'])
 
 model.fit(ds_train,
-        epochs=1,
+        epochs=10,
         shuffle=True,
         validation_data=ds_test,
         steps_per_epoch=num_train_samples // BATCH_SIZE,
