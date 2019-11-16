@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import os
 import glob
 import shutil
@@ -27,6 +30,11 @@ if not os.path.isdir(f'{DATASET_DIR}/aclImdb'):
 else:
     print('Dataset already extracted.')
 
+# Arguments
+VOCAB_SIZE = 1_000
+MAX_SENTENCE_LEN = 30
+BATCH_SIZE = 32
+
 # Load data from folders
 TEST_FOLDER = f'{DATASET_DIR}/aclImdb/test'
 TEST_POSITIVE_FOLDER = f'{TEST_FOLDER}/pos'
@@ -36,10 +44,6 @@ TRAIN_FOLDER = f'{DATASET_DIR}/aclImdb/train'
 TRAIN_POSITIVE_FOLDER = f'{TRAIN_FOLDER}/pos'
 TRAIN_NEGATIVE_FOLDER = f'{TRAIN_FOLDER}/neg'
 TRAIN_UNSUPERVISED_FOLDER = f'{TRAIN_FOLDER}/unsup'
-
-VOCAB_SIZE = 1_000
-MAX_SENTENCE_LEN = 30
-BATCH_SIZE = 32
 
 def get_tokenizer(vocab_file, vocab_size, separator='\n'):
     vocab = open(vocab_file).read().split(separator)
@@ -140,13 +144,19 @@ model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
               metrics=['accuracy'])
 
 model.fit(ds_train,
-        epochs=5,
+        epochs=1,
         shuffle=True,
         validation_data=ds_test,
         steps_per_epoch=num_train_samples // BATCH_SIZE,
-        validation_steps=num_test_samples // BATCH_SIZE)
+        validation_steps=num_test_samples // BATCH_SIZE,
+        callbacks=[
+            tf.keras.callbacks.TensorBoard(
+                log_dir=os.path.join("logs", "baseline_small2"),
+                histogram_freq=1,
+                profile_batch=0)
+        ])
 
-while True:
-	print('Enter something:')
-	inp = input()
-	print(model.predict(tokenizer.texts_to_sequences([inp.split(' ')])))
+# while True:
+# 	print('Enter something:')
+# 	inp = input()
+# 	print(model.predict(tokenizer.texts_to_sequences([inp.split(' ')])))
