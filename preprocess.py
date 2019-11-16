@@ -132,12 +132,12 @@ ds_test = ds_test.padded_batch(
     padded_shapes=([None], [2]),
     drop_remainder=True)
 
-import SelfAttention from layers
+import layers
 
 model = tf.keras.Sequential([
     tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=128, mask_zero=True),
-    tf.keras.layers.LSTM(48, return_sequences=True),
-    SelfAttention(size=50,
+    tf.keras.layers.LSTM(48, activation='sigmoid', return_sequences=True),
+    layers.SelfAttention(size=50,
                     num_hops=6,
                     use_penalization=False,
                     model_api='sequential'),
