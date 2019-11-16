@@ -136,9 +136,9 @@ import layers
 
 model = tf.keras.Sequential([
     tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=128, mask_zero=True),
-    tf.keras.layers.LSTM(48, activation='sigmoid', return_sequences=True),
-    layers.SelfAttention(size=50,
-                    num_hops=6,
+    tf.keras.layers.LSTM(64, activation='sigmoid', return_sequences=True),
+    layers.SelfAttention(size=64,
+                    num_hops=32,
                     use_penalization=False,
                     model_api='sequential'),
     tf.keras.layers.Dense(2, activation='softmax')
@@ -156,7 +156,7 @@ model.fit(ds_train,
         validation_steps=num_test_samples // BATCH_SIZE,
         callbacks=[
             tf.keras.callbacks.TensorBoard(
-                log_dir=os.path.join("logs", "baseline_small2"),
+                log_dir=os.path.join("logs", "lstm_self_attantion"),
                 histogram_freq=1,
                 profile_batch=0)
         ])
