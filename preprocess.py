@@ -6,8 +6,25 @@ import glob
 import shutil
 import random
 import tarfile
+import argparse
 import urllib.request
 import tensorflow as tf
+
+# Process arguments
+parser = argparse.ArgumentParser(description='This is a script which trains neural networks')
+parser.add_argument('-bs', '--batch-size', dest='bs', type=int, help='Inputs batch size', required=True)
+parser.add_argument('-vs', '--vocab-size', dest='vs', type=int, help='Vocabulary size', required=True)
+parser.add_argument('-sl', '--sentence-length', dest='sl', type=int, help='Max length of sentences', required=True)
+
+parser.add_argument('-ld', '--log-dir', dest='ld', help='Directory to log data to in the logs directory', required=True)
+
+parser.add_argument('-es', '--embedding-size', dest='es', type=int, help='Size of embeddings', required=False)
+parser.add_argument('-hu', '--hidden-units', dest='hu', type=int, help='Size of hidden units', required=False)
+parser.add_argument('-att', '--attention', dest='att', type=bool, help='Use attention', required=False)
+
+parser.add_argument('-ep', '--epochs', dest='ep', type=bool, help='Number of epochs', required=True)
+
+args = parser.parse_args()
 
 # Download dataset
 DATASET_URL = 'http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz'
@@ -31,9 +48,9 @@ else:
     print('Dataset already extracted.')
 
 # Arguments
-VOCAB_SIZE = 1_000
-MAX_SENTENCE_LEN = 100
-BATCH_SIZE = 32
+VOCAB_SIZE = args.vs
+MAX_SENTENCE_LEN = args.sl
+BATCH_SIZE = args.bs
 
 # Load data from folders
 TEST_FOLDER = f'{DATASET_DIR}/aclImdb/test'
@@ -149,19 +166,14 @@ model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
               metrics=['accuracy'])
 
 model.fit(ds_train,
-        epochs=10,
+        epochs=args.ep,
         shuffle=True,
         validation_data=ds_test,
         steps_per_epoch=num_train_samples // BATCH_SIZE,
         validation_steps=num_test_samples // BATCH_SIZE,
         callbacks=[
             tf.keras.callbacks.TensorBoard(
-                log_dir=os.path.join("logs", "lstm_self_attantion"),
+                log_dir=os.path.join("logs", args.ld),
                 histogram_freq=1,
                 profile_batch=0)
         ])
-
-# while True:
-# 	print('Enter something:')
-# 	inp = input()
-# 	print(model.predict(tokenizer.texts_to_sequences([inp.split(' ')])))
