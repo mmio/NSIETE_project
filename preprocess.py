@@ -9,6 +9,7 @@ import tarfile
 import argparse
 import urllib.request
 import tensorflow as tf
+import numpy as np
 
 # Process arguments
 parser = argparse.ArgumentParser(description='This is a script which trains neural networks')
@@ -96,6 +97,39 @@ def create_shifted_dataset_from_files(folders, shuffle=True):
 
 # create_shifted_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
 
+def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [0, 1]}, shuffle=True):
+    files = map(lambda folder: [glob.glob(f'{folder}/*'), f'{folder}'], folders)
+
+    # Assign label to every files based on folder they are in
+    labeled_files = map(lambda files_with_label:
+                        map(lambda file_path:
+                            [file_path, files_with_label[1].split('/')[-1]] # Take only the last folde from the folder path
+                        , files_with_label[0])
+                    , files)
+
+    # flatten list
+    flat_labeled_files = []
+    for lf in labeled_files:
+        for fl in lf:
+            flat_labeled_files.append(fl)
+
+    if shuffle:
+        random.shuffle(flat_labeled_files)
+
+    # read file contents
+    labeled_texts = map(lambda example: [
+        list(map(lambda x:
+                 x.split(' ')[1:MAX_SENTENCE_LEN+1],
+                 open(example[0]).read().split('.'))), example[1]
+    ], flat_labeled_files)
+
+    # tokenize texts
+    labeled_tokens = map(lambda example: [tf.keras.preprocessing.sequence.pad_sequences(
+                                                tokenizer.texts_to_sequences(example[0]), MAX_SENTENCE_LEN, padding='post'),
+                                            label_map[example[1]]], labeled_texts)
+
+    return list(labeled_tokens), len(flat_labeled_files)
+
 def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [0, 1]}, shuffle=True):
     files = map(lambda folder: [glob.glob(f'{folder}/*'), f'{folder}'], folders)
 
@@ -121,18 +155,24 @@ def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [
     # tokenize texts
     labeled_tokens = map(lambda example: [*tokenizer.texts_to_sequences([example[0]]),
                                           label_map[example[1]]], labeled_texts)
+
     return list(labeled_tokens), len(flat_labeled_files)
 
-cls_test_ds, num_test_samples = create_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
-cls_train_ds, num_train_samples = create_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+# create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 
+cls_test_ds, num_test_samples = create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+cls_train_ds, num_train_samples = create_hierarchical_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+
+
+
+# generate examples in the form of ((bs, review)(bs, label))
 def cls_test_gen():
     for el in cls_test_ds:
-        yield (el[0], el[1])
+        yield (el[0][:10], el[1])
 
 def cls_train_gen():
     for el in cls_train_ds:
-        yield (el[0], el[1])
+        yield (el[0][:10], el[1])
 
 ds_test = tf.data.Dataset.from_generator(lambda: cls_test_gen(),
                                         (tf.int64, tf.int64)).repeat()
@@ -141,30 +181,27 @@ ds_train = tf.data.Dataset.from_generator(lambda: cls_train_gen(),
 
 ds_train = ds_train.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([None], [2]),
+    padded_shapes=([10, None], [2]),
     drop_remainder=True)
 
 ds_test = ds_test.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([None], [2]),
+    padded_shapes=([10, None], [2]),
     drop_remainder=True)
 
 import layers
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=128, mask_zero=True),
-    tf.keras.layers.LSTM(64, activation='sigmoid', return_sequences=True),
-    layers.SelfAttention(size=64,
-                    num_hops=32,
-                    use_penalization=False,
-                    model_api='sequential'),
+    tf.keras.layers.TimeDistributed(tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=4, mask_zero=True), input_shape=(10, args.sl)),
+    tf.keras.layers.TimeDistributed(tf.keras.layers.LSTM(2, activation='sigmoid')),
+    tf.keras.layers.LSTM(4, activation='sigmoid'),
     tf.keras.layers.Dense(2, activation='softmax')
 ])
 
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
               loss='binary_crossentropy',
               metrics=['accuracy'])
-
+model.summary()
 model.fit(ds_train,
         epochs=args.ep,
         shuffle=True,
