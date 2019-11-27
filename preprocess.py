@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser(description='This is a script which trains neur
 parser.add_argument('-bs', '--batch-size', dest='bs', type=int, help='Inputs batch size', required=True)
 parser.add_argument('-vs', '--vocab-size', dest='vs', type=int, help='Vocabulary size', required=True)
 parser.add_argument('-sl', '--sentence-length', dest='sl', type=int, help='Max length of sentences', required=True)
+parser.add_argument('-pl', '--paragraph-length', dest='pl', type=int, help='Max length of paragraph in sentences', required=True)
 
 parser.add_argument('-ld', '--log-dir', dest='ld', help='Directory to log data to in the logs directory', required=True)
 
@@ -23,7 +24,7 @@ parser.add_argument('-es', '--embedding-size', dest='es', type=int, help='Size o
 parser.add_argument('-hu', '--hidden-units', dest='hu', type=int, help='Size of hidden units', required=False)
 parser.add_argument('-att', '--attention', dest='att', type=bool, help='Use attention', required=False)
 
-parser.add_argument('-ep', '--epochs', dest='ep', type=bool, help='Number of epochs', required=True)
+parser.add_argument('-ep', '--epochs', dest='ep', type=int, help='Number of epochs', required=True)
 
 args = parser.parse_args()
 
@@ -50,7 +51,8 @@ else:
 
 # Arguments
 VOCAB_SIZE = args.vs
-MAX_SENTENCE_LEN = args.sl
+MAX_SENTENCE_LEN = args.sl # Max words in a sentence
+MAX_PAR_LEN = args.pl # Max sentences in a review
 BATCH_SIZE = args.bs
 
 # Load data from folders
@@ -168,11 +170,11 @@ cls_train_ds, num_train_samples = create_hierarchical_labeled_dataset_from_files
 # generate examples in the form of ((bs, review)(bs, label))
 def cls_test_gen():
     for el in cls_test_ds:
-        yield (el[0][:10], el[1])
+        yield (el[0][:MAX_PAR_LEN], el[1])
 
 def cls_train_gen():
     for el in cls_train_ds:
-        yield (el[0][:10], el[1])
+        yield (el[0][:MAX_PAR_LEN], el[1])
 
 ds_test = tf.data.Dataset.from_generator(lambda: cls_test_gen(),
                                         (tf.int64, tf.int64)).repeat()
@@ -181,20 +183,20 @@ ds_train = tf.data.Dataset.from_generator(lambda: cls_train_gen(),
 
 ds_train = ds_train.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([10, None], [2]),
+    padded_shapes=([MAX_PAR_LEN, None], [2]),
     drop_remainder=True)
 
 ds_test = ds_test.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([10, None], [2]),
+    padded_shapes=([MAX_PAR_LEN, None], [2]),
     drop_remainder=True)
 
 import layers
 
 model = tf.keras.Sequential([
-    tf.keras.layers.TimeDistributed(tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=4, mask_zero=True), input_shape=(10, args.sl)),
-    tf.keras.layers.TimeDistributed(tf.keras.layers.LSTM(2, activation='sigmoid')),
-    tf.keras.layers.LSTM(4, activation='sigmoid'),
+    tf.keras.layers.TimeDistributed(tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=8, mask_zero=True), input_shape=(MAX_PAR_LEN, args.sl)),
+    tf.keras.layers.TimeDistributed(tf.keras.layers.LSTM(8, activation='sigmoid')),
+    tf.keras.layers.LSTM(8, activation='sigmoid'),
     tf.keras.layers.Dense(2, activation='softmax')
 ])
 
