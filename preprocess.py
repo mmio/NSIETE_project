@@ -131,37 +131,6 @@ def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1,
         example[1]
     ], flat_labeled_files)
 
-    # avg_sent_len = 0
-    # counter = 0
-    # for file in labeled_texts:
-    #     counter += 1
-    #     avg_sent_len += len(file[0])
-    # print(avg_sent_len // counter)
-
-    # max_sent_len = 0
-    # counter = 0
-    # for file in labeled_texts:
-    #     if len(file[0]) > max_sent_len:
-    #         max_sent_len = len(file[0])
-    #     if len(file[0]) > 50:
-    #         counter += 1
-    # print(max_sent_len, counter)
-
-    # avg_sent_len = 0
-    # counter = 0
-    # for file in labeled_texts:
-    #     for sentence in file[0]:
-    #         counter += 1
-    #         avg_sent_len += len(sentence)
-    # print(avg_sent_len // counter)
-
-    # max_sent_len = 0
-    # for file in labeled_texts:
-    #     for sentence in file[0]:
-    #         if len(sentence) > max_sent_len:
-    #             max_sent_len = len(sentence)
-    # print(max_sent_len)
-
     # tokenize texts
     labeled_tokens = map(lambda example: [tf.keras.preprocessing.sequence.pad_sequences(
                                                 tokenizer.texts_to_sequences(example[0]), MAX_SENTENCE_LEN, padding='post'),
@@ -244,8 +213,12 @@ for lstm1 in [128, 256, 512]:
                     tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
                     input_shape=(MAX_PAR_LEN, args.sl)),
                 tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')),
-                tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid'),
+                    tf.keras.layers.Bidirectional(
+                        tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')
+                    )),
+                tf.keras.layers.Bidirectional(
+                    tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid')
+                ),
                 tf.keras.layers.Dense(2, activation='softmax')
             ])
 
