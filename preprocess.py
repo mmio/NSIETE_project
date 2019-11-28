@@ -66,13 +66,12 @@ TRAIN_NEGATIVE_FOLDER = f'{TRAIN_FOLDER}/neg'
 TRAIN_UNSUPERVISED_FOLDER = f'{TRAIN_FOLDER}/unsup'
 
 def get_tokenizer(vocab_file, vocab_size, separator='\n'):
-    vocab = open(vocab_file).read().split(separator)
-    ## Is this right
-    tokenizer = tf.keras.preprocessing.text.Tokenizer(vocab_size+1, oov_token=vocab_size)
-    tokenizer.fit_on_texts(vocab)
+    vocab = open(vocab_file).read()
+    tokenizer = tf.keras.preprocessing.text.Tokenizer(vocab_size, split=separator, oov_token=1)  # last one is the oov, 0 is used for padding
+    tokenizer.fit_on_texts([vocab])
     return tokenizer
 
-tokenizer = get_tokenizer(f'{DATASET_DIR}/aclImdb/imdb.vocab', VOCAB_SIZE+1)
+tokenizer = get_tokenizer(f'{DATASET_DIR}/aclImdb/imdb.vocab', args.vs+1)
 
 # Dataset
 def create_shifted_dataset_from_files(folders, shuffle=True):
@@ -131,6 +130,36 @@ def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1,
                  open(example[0]).read().split('.'))),
         example[1]
     ], flat_labeled_files)
+
+    # avg_sent_len = 0
+    # counter = 0
+    # for file in labeled_texts:
+    #     counter += 1
+    #     avg_sent_len += len(file[0])
+    # print(avg_sent_len // counter)
+
+    # max_sent_len = 0
+    # counter = 0
+    # for file in labeled_texts:
+    #     counter += 1
+    #     if len(file[0]) > max_sent_len:
+    #         max_sent_len = len(file[0])
+    # print(max_sent_len)
+
+    # avg_sent_len = 0
+    # counter = 0
+    # for file in labeled_texts:
+    #     for sentence in file[0]:
+    #         counter += 1
+    #         avg_sent_len += len(sentence)
+    # print(avg_sent_len // counter)
+
+    # max_sent_len = 0
+    # for file in labeled_texts:
+    #     for sentence in file[0]:
+    #         if len(sentence) > max_sent_len:
+    #             max_sent_len = len(sentence)
+    # print(max_sent_len)
 
     # tokenize texts
     labeled_tokens = map(lambda example: [tf.keras.preprocessing.sequence.pad_sequences(
