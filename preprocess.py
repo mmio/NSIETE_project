@@ -231,57 +231,59 @@ ds_test = ds_test.padded_batch(
 
 import layers
 
-emb = 32
-lstm1 = 8
-drop1 = 0.25
-lstm2 = 8
-drop2 = 0.25
+for lstm1 in [128, 256, 512]:
+    for lstm2 in [128, 256, 512]:
+        emb = 300
+        #lstm1 = 8
+        drop1 = 0.25
+        #lstm2 = 8
+        drop2 = 0.25
+        def get_model():
+            return tf.keras.Sequential([
+                tf.keras.layers.TimeDistributed(
+                    tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
+                    input_shape=(MAX_PAR_LEN, args.sl)),
+                tf.keras.layers.TimeDistributed(
+                    tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')),
+                tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid'),
+                tf.keras.layers.Dense(2, activation='softmax')
+            ])
 
-def get_model():
-    return tf.keras.Sequential([
-        tf.keras.layers.TimeDistributed(
-            tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
-            input_shape=(MAX_PAR_LEN, args.sl)),
-        tf.keras.layers.TimeDistributed(
-            tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')),
-        tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid'),
-        tf.keras.layers.Dense(2, activation='softmax')
-    ])
 
+        model = get_model()
 
-model = get_model()
+        # Model Saving
+        checkpoint_path = "checkpoints"+f'{lstm1}_{lstm2}'+"/model-cp-{epoch:04d}-{val_accuracy:.2f}.ckpt"
+        checkpoint_dir = os.path.dirname(checkpoint_path)
 
-# Model Saving
-checkpoint_path = "checkpoints/model-cp-{epoch:04d}-{val_accuracy:.2f}.ckpt"
-checkpoint_dir = os.path.dirname(checkpoint_path)
+        # Load Latest
+        latest = tf.train.latest_checkpoint(checkpoint_dir)
 
-# Load Latest
-latest = tf.train.latest_checkpoint(checkpoint_dir)
+        if latest:
+            print('Model loaded')
+            model.load_weights(latest)
 
-if latest:
-    print('Model loaded')
-    model.load_weights(latest)
+        # Create a callback that saves the model's weights
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                         monitor='val_accuracy',
+                                                         save_weights_only=True,
+                                                         verbose=1)
 
-# Create a callback that saves the model's weights
-cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                 monitor='val_accuracy',
-                                                 save_weights_only=True,
-                                                 verbose=1)
+        model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
+                      loss='binary_crossentropy',
+                      metrics=['accuracy'])
+        model.summary()
 
-model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-model.summary()
-model.fit(ds_train,
-        epochs=args.ep,
-        shuffle=True,
-        validation_data=ds_test,
-        steps_per_epoch=num_train_samples // BATCH_SIZE,
-        validation_steps=num_test_samples // BATCH_SIZE,
-        callbacks=[
-            tf.keras.callbacks.TensorBoard(
-                log_dir=os.path.join("logs", f'emb{emb}-l1_{lstm1}-drop1_{drop1}-l2_{lstm2}-drop2_{drop2}-' + args.ld),
-                histogram_freq=1,
-                profile_batch=0),
-            cp_callback
-        ])
+        model.fit(ds_train,
+                epochs=args.ep,
+                shuffle=True,
+                validation_data=ds_test,
+                steps_per_epoch=num_train_samples // BATCH_SIZE,
+                validation_steps=num_test_samples // BATCH_SIZE,
+                callbacks=[
+                    tf.keras.callbacks.TensorBoard(
+                        log_dir=os.path.join("logs", f'emb{emb}-l1_{lstm1}-drop1_{drop1}-l2_{lstm2}-drop2_{drop2}-' + args.ld),
+                        histogram_freq=1,
+                        profile_batch=0),
+                    cp_callback
+                ])
