@@ -141,10 +141,11 @@ def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1,
     # max_sent_len = 0
     # counter = 0
     # for file in labeled_texts:
-    #     counter += 1
     #     if len(file[0]) > max_sent_len:
     #         max_sent_len = len(file[0])
-    # print(max_sent_len)
+    #     if len(file[0]) > 50:
+    #         counter += 1
+    # print(max_sent_len, counter)
 
     # avg_sent_len = 0
     # counter = 0
@@ -197,11 +198,8 @@ def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [
 
     return list(labeled_tokens), len(flat_labeled_files)
 
-# create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}',
-# f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 
-
-cls_test_ds, num_test_samples = create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+cls_test_ds, num_test_samples = create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
 cls_train_ds, num_train_samples = create_hierarchical_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 
 
