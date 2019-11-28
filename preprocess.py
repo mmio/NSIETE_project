@@ -51,8 +51,8 @@ else:
 
 # Arguments
 VOCAB_SIZE = args.vs
-MAX_SENTENCE_LEN = args.sl # Max words in a sentence
-MAX_PAR_LEN = args.pl # Max sentences in a review
+MAX_SENTENCE_LEN = args.sl  # Max words in a sentence
+MAX_PAR_LEN = args.pl  # Max sentences in a review
 BATCH_SIZE = args.bs
 
 # Load data from folders
@@ -68,7 +68,7 @@ TRAIN_UNSUPERVISED_FOLDER = f'{TRAIN_FOLDER}/unsup'
 def get_tokenizer(vocab_file, vocab_size, separator='\n'):
     vocab = open(vocab_file).read().split(separator)
     ## Is this right
-    tokenizer = tf.keras.preprocessing.text.Tokenizer(vocab_size, oov_token=vocab_size)
+    tokenizer = tf.keras.preprocessing.text.Tokenizer(vocab_size+1, oov_token=vocab_size)
     tokenizer.fit_on_texts(vocab)
     return tokenizer
 
@@ -99,6 +99,7 @@ def create_shifted_dataset_from_files(folders, shuffle=True):
 
 # create_shifted_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
 
+
 def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [0, 1]}, shuffle=True):
     files = map(lambda folder: [glob.glob(f'{folder}/*'), f'{folder}'], folders)
 
@@ -121,8 +122,14 @@ def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1,
     # read file contents
     labeled_texts = map(lambda example: [
         list(map(lambda x:
-                 x.split(' ')[1:MAX_SENTENCE_LEN+1],
-                 open(example[0]).read().split('.'))), example[1]
+                 [x for x in
+                     list(filter(None, x.translate({ord(c): None for c in '\'\"()?/\<>!@#$,;'})
+                             .lower()
+                             .split(' ')))[:MAX_SENTENCE_LEN]
+                  if x
+                  ],
+                 open(example[0]).read().split('.'))),
+        example[1]
     ], flat_labeled_files)
 
     # tokenize texts
@@ -131,6 +138,7 @@ def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1,
                                             label_map[example[1]]], labeled_texts)
 
     return list(labeled_tokens), len(flat_labeled_files)
+
 
 def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [0, 1]}, shuffle=True):
     files = map(lambda folder: [glob.glob(f'{folder}/*'), f'{folder}'], folders)
@@ -160,11 +168,12 @@ def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [
 
     return list(labeled_tokens), len(flat_labeled_files)
 
-# create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+# create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}',
+# f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+
 
 cls_test_ds, num_test_samples = create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}, {TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 cls_train_ds, num_train_samples = create_hierarchical_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
-
 
 
 # generate examples in the form of ((bs, review)(bs, label))
@@ -172,9 +181,11 @@ def cls_test_gen():
     for el in cls_test_ds:
         yield (el[0][:MAX_PAR_LEN], el[1])
 
+
 def cls_train_gen():
     for el in cls_train_ds:
         yield (el[0][:MAX_PAR_LEN], el[1])
+
 
 ds_test = tf.data.Dataset.from_generator(lambda: cls_test_gen(),
                                         (tf.int64, tf.int64)).repeat()
@@ -193,12 +204,34 @@ ds_test = ds_test.padded_batch(
 
 import layers
 
-model = tf.keras.Sequential([
-    tf.keras.layers.TimeDistributed(tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=8, mask_zero=True), input_shape=(MAX_PAR_LEN, args.sl)),
-    tf.keras.layers.TimeDistributed(tf.keras.layers.LSTM(8, activation='sigmoid')),
-    tf.keras.layers.LSTM(8, activation='sigmoid'),
-    tf.keras.layers.Dense(2, activation='softmax')
-])
+def get_model():
+    return tf.keras.Sequential([
+        tf.keras.layers.TimeDistributed(
+            tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=300, mask_zero=True),
+            input_shape=(MAX_PAR_LEN, args.sl)),
+        tf.keras.layers.TimeDistributed(
+            tf.keras.layers.LSTM(64, activation='sigmoid')),
+        tf.keras.layers.LSTM(128, activation='sigmoid'),
+        tf.keras.layers.Dense(2, activation='softmax')
+    ])
+
+model = get_model()
+
+# Model Saving
+checkpoint_path = "checkpoints/model-cp-{epoch:04d}-{val_accuracy:.2f}.ckpt"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+
+# Load Latest
+latest = tf.train.latest_checkpoint(checkpoint_dir)
+
+if latest:
+    model.load_weights(latest)
+
+# Create a callback that saves the model's weights
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                 monitor='val_accuracy',
+                                                 save_weights_only=True,
+                                                 verbose=1)
 
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
               loss='binary_crossentropy',
@@ -214,5 +247,6 @@ model.fit(ds_train,
             tf.keras.callbacks.TensorBoard(
                 log_dir=os.path.join("logs", args.ld),
                 histogram_freq=1,
-                profile_batch=0)
+                profile_batch=0),
+            cp_callback
         ])
