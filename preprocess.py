@@ -204,16 +204,23 @@ ds_test = ds_test.padded_batch(
 
 import layers
 
+emb = 32
+lstm1 = 8
+drop1 = 0.25
+lstm2 = 8
+drop2 = 0.25
+
 def get_model():
     return tf.keras.Sequential([
         tf.keras.layers.TimeDistributed(
-            tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=300, mask_zero=True),
+            tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
             input_shape=(MAX_PAR_LEN, args.sl)),
         tf.keras.layers.TimeDistributed(
-            tf.keras.layers.LSTM(64, activation='sigmoid')),
-        tf.keras.layers.LSTM(128, activation='sigmoid'),
+            tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')),
+        tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid'),
         tf.keras.layers.Dense(2, activation='softmax')
     ])
+
 
 model = get_model()
 
@@ -225,6 +232,7 @@ checkpoint_dir = os.path.dirname(checkpoint_path)
 latest = tf.train.latest_checkpoint(checkpoint_dir)
 
 if latest:
+    print('Model loaded')
     model.load_weights(latest)
 
 # Create a callback that saves the model's weights
@@ -245,7 +253,7 @@ model.fit(ds_train,
         validation_steps=num_test_samples // BATCH_SIZE,
         callbacks=[
             tf.keras.callbacks.TensorBoard(
-                log_dir=os.path.join("logs", args.ld),
+                log_dir=os.path.join("logs", f'emb{emb}-l1_{lstm1}-drop1_{drop1}-l2_{lstm2}-drop2_{drop2}-' + args.ld),
                 histogram_freq=1,
                 profile_batch=0),
             cp_callback
