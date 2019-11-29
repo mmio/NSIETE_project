@@ -232,7 +232,7 @@ ds_test = ds_test.padded_batch(
 import layers
 
 for lstm1 in [128, 256, 512]:
-    for lstm2 in [0, 0, 0]:
+    for lstm2 in [0]:
         emb = 300
         #lstm1 = 8
         drop1 = 0.25
