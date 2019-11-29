@@ -265,7 +265,8 @@ for lstm1 in [128, 256, 512]:
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                          monitor='val_accuracy',
                                                          save_weights_only=True,
-                                                         verbose=1)
+                                                         save_best_only=True,
+							 verbose=1)
 
         model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
                       loss='binary_crossentropy',
