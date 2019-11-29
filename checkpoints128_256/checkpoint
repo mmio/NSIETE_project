@@ -1,0 +1,2 @@
+model_checkpoint_path: "model-cp-0001-0.20.ckpt"
+all_model_checkpoint_paths: "model-cp-0001-0.20.ckpt"

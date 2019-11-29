@@ -170,13 +170,24 @@ def create_hierarchical_labeled_dataset_from_files(folders, label_map={'pos':[1,
     return list(labeled_tokens), len(flat_labeled_files)
 
 
-def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [0, 1]}, shuffle=True):
+def create_labeled_dataset_from_files(folders, label_map={
+  '1':  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  '2':  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+  '3':  [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+  '4':  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+  '5':  [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+  '6':  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+  '7':  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+  '8':  [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+  '9':  [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  '10': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+}, shuffle=True):
     files = map(lambda folder: [glob.glob(f'{folder}/*'), f'{folder}'], folders)
 
     # Assign label to every files based on folder they are in
     labeled_files = map(lambda files_with_label:
                         map(lambda file_path:
-                            [file_path, files_with_label[1].split('/')[-1]] # Take only the last folde from the folder path
+                            [file_path, file_path.replace('.txt', '').split('_')[1]] # Take only the last folde from the folder path
                         , files_with_label[0])
                     , files)
 
@@ -199,19 +210,20 @@ def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [
     return list(labeled_tokens), len(flat_labeled_files)
 
 
-cls_test_ds, num_test_samples = create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
-cls_train_ds, num_train_samples = create_hierarchical_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+cls_test_ds, num_test_samples = create_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
+cls_train_ds, num_train_samples = create_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 
+print(cls_test_ds)
 
 # generate examples in the form of ((bs, review)(bs, label))
 def cls_test_gen():
     for el in cls_test_ds:
-        yield (el[0][:MAX_PAR_LEN], el[1])
+        yield (el[0], el[1])
 
 
 def cls_train_gen():
     for el in cls_train_ds:
-        yield (el[0][:MAX_PAR_LEN], el[1])
+        yield (el[0], el[1])
 
 
 ds_test = tf.data.Dataset.from_generator(lambda: cls_test_gen(),
@@ -221,12 +233,12 @@ ds_train = tf.data.Dataset.from_generator(lambda: cls_train_gen(),
 
 ds_train = ds_train.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([MAX_PAR_LEN, None], [2]),
+    padded_shapes=([None], [10]),
     drop_remainder=True)
 
 ds_test = ds_test.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([MAX_PAR_LEN, None], [2]),
+    padded_shapes=([None], [10]),
     drop_remainder=True)
 
 import layers
@@ -240,13 +252,9 @@ for lstm1 in [128, 256, 512]:
         drop2 = 0.25
         def get_model():
             return tf.keras.Sequential([
-                tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
-                    input_shape=(MAX_PAR_LEN, args.sl)),
-                tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')),
+                tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
                 tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid'),
-                tf.keras.layers.Dense(2, activation='softmax')
+                tf.keras.layers.Dense(10, activation='softmax')
             ])
 
 
@@ -270,7 +278,7 @@ for lstm1 in [128, 256, 512]:
                                                          verbose=1)
 
         model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-3),
-                      loss='binary_crossentropy',
+                      loss='categorical_crossentropy',
                       metrics=['accuracy'])
         model.summary()
 
