@@ -10,6 +10,7 @@ import argparse
 import urllib.request
 import tensorflow as tf
 import numpy as np
+from keras_self_attention import SeqSelfAttention
 
 # Process arguments
 parser = argparse.ArgumentParser(description='This is a script which trains neural networks')
@@ -200,7 +201,7 @@ ds_test = ds_test.padded_batch(
 
 import layers
 
-for lstm1 in [128, 256, 512]:
+for lstm1 in [128, 256]:
     for lstm2 in [128, 256, 512]:
         emb = 300
         #lstm1 = 8
@@ -214,17 +215,19 @@ for lstm1 in [128, 256, 512]:
                     input_shape=(MAX_PAR_LEN, args.sl)
                 ),
                 tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.Bidirectional(
-                        tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')
-                    )
+                    tf.keras.Sequential([
+                        tf.keras.layers.Bidirectional(
+                            tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid', return_sequences=True)
+                        ),
+                        tf.keras.layers.Flatten(),
+                    ]),
                 ),
+                tf.keras.layers.Dense(128, activation='tanh'),
+                tf.keras.layers.Dense(64, activation='softmax'),
+
                 tf.keras.layers.Bidirectional(
-                    tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid', return_sequences=True)
+                    tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='softmax')
                 ),
-                layers.SelfAttention(size=lstm2//2,
-                                     num_hops=32,
-                                     use_penalization=False,
-                                     model_api='sequential'),
                 tf.keras.layers.Dense(2, activation='softmax')
             ])
 
@@ -245,6 +248,7 @@ for lstm1 in [128, 256, 512]:
         # Create a callback that saves the model's weights
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                          monitor='val_accuracy',
+                                                         save_best_only=True,
                                                          save_weights_only=True,
                                                          verbose=1)
 
