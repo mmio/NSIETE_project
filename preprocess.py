@@ -199,19 +199,19 @@ def create_labeled_dataset_from_files(folders, label_map={'pos':[1, 0], 'neg': [
     return list(labeled_tokens), len(flat_labeled_files)
 
 
-cls_test_ds, num_test_samples = create_hierarchical_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
-cls_train_ds, num_train_samples = create_hierarchical_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
+cls_test_ds, num_test_samples = create_labeled_dataset_from_files([f'{TEST_POSITIVE_FOLDER}', f'{TEST_NEGATIVE_FOLDER}'])
+cls_train_ds, num_train_samples = create_labeled_dataset_from_files([f'{TRAIN_POSITIVE_FOLDER}', f'{TRAIN_NEGATIVE_FOLDER}'])
 
 
 # generate examples in the form of ((bs, review)(bs, label))
 def cls_test_gen():
     for el in cls_test_ds:
-        yield (el[0][:MAX_PAR_LEN], el[1])
+        yield (el[0], el[1])
 
 
 def cls_train_gen():
     for el in cls_train_ds:
-        yield (el[0][:MAX_PAR_LEN], el[1])
+        yield (el[0], el[1])
 
 
 ds_test = tf.data.Dataset.from_generator(lambda: cls_test_gen(),
@@ -221,18 +221,18 @@ ds_train = tf.data.Dataset.from_generator(lambda: cls_train_gen(),
 
 ds_train = ds_train.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([MAX_PAR_LEN, None], [2]),
+    padded_shapes=([None], [2]),
     drop_remainder=True)
 
 ds_test = ds_test.padded_batch(
     BATCH_SIZE,
-    padded_shapes=([MAX_PAR_LEN, None], [2]),
+    padded_shapes=([None], [2]),
     drop_remainder=True)
 
 import layers
 
 for lstm1 in [128, 256, 512]:
-    for lstm2 in [128, 256, 512]:
+    for lstm2 in [0, 0, 0]:
         emb = 300
         #lstm1 = 8
         drop1 = 0.25
@@ -240,13 +240,11 @@ for lstm1 in [128, 256, 512]:
         drop2 = 0.25
         def get_model():
             return tf.keras.Sequential([
-                tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
-                    input_shape=(MAX_PAR_LEN, args.sl)),
-                tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid')),
-                tf.keras.layers.LSTM(lstm2, dropout=drop2, activation='sigmoid'),
-                tf.keras.layers.Dense(2, activation='softmax')
+                tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
+                tf.keras.layers.Bidirectional(
+                	tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid'),
+		),
+		tf.keras.layers.Dense(2, activation='softmax')
             ])
 
 
