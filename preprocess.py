@@ -241,9 +241,11 @@ for lstm1 in [128, 256, 512]:
         def get_model():
             return tf.keras.Sequential([
                 tf.keras.layers.Embedding(input_dim=VOCAB_SIZE+2, output_dim=emb, mask_zero=True),
-                tf.keras.layers.Bidirectional(
-                	tf.keras.layers.LSTM(lstm1, dropout=drop1, activation='sigmoid'),
-		),
+              	tf.keras.layers.LSTM(lstm1, return_sequences=True, dropout=drop1, activation='sigmoid'),
+		layers.SelfAttention(size=lstm1//2,
+                                     num_hops=64,
+                                     use_penalization=False,
+                                     model_api='sequential'),
 		tf.keras.layers.Dense(2, activation='softmax')
             ])
 

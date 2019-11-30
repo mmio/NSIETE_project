@@ -1,1 +1,1 @@
-python3 preprocess.py -bs 256 -vs 10000 -sl 300 -pl 15 -ld baseline_bilstms -ep 20
+python3 preprocess.py -bs 256 -vs 10000 -sl 300 -pl 15 -ld baseline_att -ep 20
