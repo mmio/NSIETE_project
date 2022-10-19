@@ -44,7 +44,26 @@ else:
 if not os.path.isdir(f'{DATASET_DIR}/aclImdb'):
     with tarfile.open(DATASET_FILE_PATH) as archive:
         print(f'Extracting "{DATASET_FILE_PATH}" to "{DATASET_DIR}" ...')
-        archive.extractall(DATASET_DIR)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(archive, DATASET_DIR)
         print('Extraction finished.')
 else:
     print('Dataset already extracted.')
